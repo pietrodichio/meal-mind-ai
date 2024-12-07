@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users, accounts } from "./db/schema";
+import { users } from "./db/schema";
 
 export const {
   handlers: { GET, POST },
@@ -28,16 +28,29 @@ export const {
         const passwordsMatch = await bcrypt.compare(password, user.password);
         if (!passwordsMatch) return null;
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          accountId: user.accountId,
-        };
+        return user;
       },
     }),
   ],
   pages: {
     signIn: "/login",
+  },
+  session: { strategy: "jwt" },
+  secret: process.env.AUTH_SECRET,
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.accountId = user.accountId;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.accountId = token.accountId as string;
+      }
+      return session;
+    },
   },
 });

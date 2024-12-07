@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { desc, eq } from "drizzle-orm";
-import { mealPlans, users } from "@/lib/db/schema";
+import { mealPlans, meals, users } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
+import { getMealPlansByAccountId } from "@/lib/db/queries";
+
+export const dynamic = "force-dynamic";
+
+const DAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+const TYPES = ["lunch", "dinner"] as const;
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,12 +25,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get cursor from query string
     const { searchParams } = new URL(req.url);
     const cursor = searchParams.get("cursor");
     const limit = 5;
 
-    // Get user's account ID
     const user = await db.query.users.findFirst({
       where: eq(users.id, session.user.id),
     });
@@ -25,15 +37,40 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    // Query meal plans
-    const items = await db.query.mealPlans.findMany({
-      where: eq(mealPlans.accountId, user.accountId),
-      orderBy: [desc(mealPlans.createdAt)],
-      limit: limit + 1, // get one extra to check if there are more
-      offset: cursor ? parseInt(cursor) : 0,
-    });
+    // Query meal plans with their meals
+    const items = await getMealPlansByAccountId(
+      user.accountId,
+      limit + 1,
+      cursor ? parseInt(cursor) : 0
+    );
 
-    // Check if there are more items
+    // If no meal plans exist, create a default one
+    if (items.length === 0) {
+      const [newMealPlan] = await db
+        .insert(mealPlans)
+        .values({
+          accountId: user.accountId,
+          createdById: session.user.id,
+        })
+        .returning();
+
+      const mealsToInsert = DAYS.flatMap((day) =>
+        TYPES.map((type) => ({
+          mealPlanId: newMealPlan.id,
+          day,
+          type,
+          name: "",
+        }))
+      );
+
+      const insertedMeals = await db
+        .insert(meals)
+        .values(mealsToInsert)
+        .returning();
+
+      items.push({ ...newMealPlan, meals: insertedMeals });
+    }
+
     const hasMore = items.length > limit;
     const data = hasMore ? items.slice(0, -1) : items;
     const nextCursor = hasMore
@@ -70,18 +107,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    const body = await req.json();
-
-    const mealPlan = await db
+    // Create new meal plan
+    const [mealPlan] = await db
       .insert(mealPlans)
       .values({
         accountId: user.accountId,
         createdById: session.user.id,
-        plan: body.plan,
       })
       .returning();
 
-    return NextResponse.json(mealPlan[0]);
+    // Create empty meals for the plan
+    const mealsToInsert = DAYS.flatMap((day) =>
+      TYPES.map((type) => ({
+        mealPlanId: mealPlan.id,
+        day,
+        type,
+        name: "",
+      }))
+    );
+
+    await db.insert(meals).values(mealsToInsert);
+
+    return NextResponse.json(mealPlan);
   } catch (error) {
     console.error("Error creating meal plan:", error);
     return NextResponse.json(

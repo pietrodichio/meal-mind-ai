@@ -1,14 +1,14 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -19,18 +19,43 @@ export default function LoginPage() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const result = await signIn("credentials", {
+    const data = {
       email: formData.get("email"),
       password: formData.get("password"),
-      redirect: false,
-    });
+      name: formData.get("name"),
+    };
 
-    if (result?.error) {
-      setError("Invalid email or password");
-      setIsLoading(false);
-    } else {
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to register");
+      }
+
+      // Automatically sign in after registration
+      const signInResult = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        throw new Error("Failed to sign in");
+      }
+
       router.push("/");
       router.refresh();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Something went wrong");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -38,9 +63,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md space-y-8 p-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Create your account
+          </h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Sign in to your account
+            Enter your details below to create your account
           </p>
         </div>
 
@@ -50,6 +77,17 @@ export default function LoginPage() {
               {error}
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              required
+              placeholder="John Doe"
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -74,16 +112,16 @@ export default function LoginPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? "Creating account..." : "Create account"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            Already have an account?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="text-primary hover:text-primary/90 font-medium"
             >
-              Create one
+              Sign in
             </Link>
           </p>
         </form>

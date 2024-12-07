@@ -1,5 +1,11 @@
 import { relations } from "drizzle-orm";
-import { pgTable, uuid, timestamp, jsonb, text } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  timestamp,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 // Accounts table (for families)
 export const accounts = pgTable("accounts", {
@@ -20,7 +26,41 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Meal plans table
+// Create a meals table for better structure
+export const meals = pgTable(
+  "meals",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    mealPlanId: uuid("meal_plan_id")
+      .notNull()
+      .references(() => mealPlans.id, { onDelete: "cascade" }),
+    day: text("day", {
+      enum: [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ],
+    }).notNull(),
+    type: text("type", { enum: ["lunch", "dinner"] }).notNull(),
+    name: text("name").default(""),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    // Add unique constraint for mealPlanId + day + type combination
+    unq: uniqueIndex("meal_unique_constraint").on(
+      table.mealPlanId,
+      table.day,
+      table.type
+    ),
+  })
+);
+
+// Simplified meal plans table
 export const mealPlans = pgTable("meal_plans", {
   id: uuid("id").defaultRandom().primaryKey(),
   accountId: uuid("account_id")
@@ -29,18 +69,6 @@ export const mealPlans = pgTable("meal_plans", {
   createdById: uuid("created_by_id")
     .notNull()
     .references(() => users.id),
-  // Store the entire meal plan as JSONB
-  plan: jsonb("plan")
-    .$type<{
-      monday: { lunch: { name: string }; dinner: { name: string } };
-      tuesday: { lunch: { name: string }; dinner: { name: string } };
-      wednesday: { lunch: { name: string }; dinner: { name: string } };
-      thursday: { lunch: { name: string }; dinner: { name: string } };
-      friday: { lunch: { name: string }; dinner: { name: string } };
-      saturday: { lunch: { name: string }; dinner: { name: string } };
-      sunday: { lunch: { name: string }; dinner: { name: string } };
-    }>()
-    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -58,13 +86,13 @@ export const usersRelations = relations(users, ({ one }) => ({
   }),
 }));
 
-export const mealPlansRelations = relations(mealPlans, ({ one }) => ({
-  account: one(accounts, {
-    fields: [mealPlans.accountId],
-    references: [accounts.id],
-  }),
-  createdBy: one(users, {
-    fields: [mealPlans.createdById],
-    references: [users.id],
+export const mealPlansRelations = relations(mealPlans, ({ many }) => ({
+  meals: many(meals),
+}));
+
+export const mealsRelations = relations(meals, ({ one }) => ({
+  mealPlan: one(mealPlans, {
+    fields: [meals.mealPlanId],
+    references: [mealPlans.id],
   }),
 }));

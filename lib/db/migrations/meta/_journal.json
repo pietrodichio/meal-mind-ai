@@ -8,6 +8,20 @@
       "when": 1733421405645,
       "tag": "0000_good_phantom_reporter",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1733605092469,
+      "tag": "0001_bumpy_the_hunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1733605880065,
+      "tag": "0002_dark_rattler",
+      "breakpoints": true
     }
   ]
 }

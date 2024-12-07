@@ -1,3 +1,20 @@
+import "next-auth";
+import { users } from "./db/schema";
+import { InferSelectModel } from "drizzle-orm";
+
+type DBUser = InferSelectModel<typeof users>;
+
+declare module "next-auth" {
+  interface User extends DBUser {}
+
+  interface Session {
+    user: User & {
+      id: string;
+      accountId: string;
+    };
+  }
+}
+
 export interface Meal {
   name: string;
   description?: string;
@@ -11,51 +28,20 @@ export interface DayMeals {
 export interface MealPlan {
   id: string;
   userId: string;
-  monday: DayMeals;
-  tuesday: DayMeals;
-  wednesday: DayMeals;
-  thursday: DayMeals;
-  friday: DayMeals;
-  saturday: DayMeals;
-  sunday: DayMeals;
+  meals: {
+    id: string;
+    day: DayOfWeek;
+    type: "lunch" | "dinner";
+    name: string;
+  }[];
   createdAt: string;
 }
 
-export type DayOfWeek = keyof Omit<MealPlan, "id" | "userId" | "createdAt">;
-
-// Example:
-export const exampleMealPlan: MealPlan = {
-  id: "mp_123",
-  userId: "user_456",
-  monday: {
-    lunch: {
-      name: "Pollo con broccoli e riso Pollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e risoPollo con broccoli e riso",
-    },
-    dinner: { name: "Zuppa di ceci e zucca con pane" },
-  },
-  tuesday: {
-    lunch: { name: "Insalata di tonno" },
-    dinner: { name: "Pasta al pomodoro" },
-  },
-  wednesday: {
-    lunch: { name: "" },
-    dinner: { name: "" },
-  },
-  thursday: {
-    lunch: { name: "" },
-    dinner: { name: "" },
-  },
-  friday: {
-    lunch: { name: "" },
-    dinner: { name: "" },
-  },
-  saturday: {
-    lunch: { name: "" },
-    dinner: { name: "" },
-  },
-  sunday: {
-    lunch: { name: "" },
-    dinner: { name: "" },
-  },
-  createdAt: "2024-03-17T10:00:00Z",
-};
+export type DayOfWeek =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";

@@ -2,7 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { users, accounts } from "@/lib/db/schema";
+import { users, accounts, mealPlans, meals } from "@/lib/db/schema";
+
+export const dynamic = "force-dynamic";
+
+const DAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+const TYPES = ["lunch", "dinner"] as const;
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,6 +54,27 @@ export async function POST(req: NextRequest) {
         accountId: account.id,
       })
       .returning();
+
+    // Create initial meal plan
+    const [mealPlan] = await db
+      .insert(mealPlans)
+      .values({
+        accountId: account.id,
+        createdById: user.id,
+      })
+      .returning();
+
+    // Create empty meals for the plan
+    const mealsToInsert = DAYS.flatMap((day) =>
+      TYPES.map((type) => ({
+        mealPlanId: mealPlan.id,
+        day,
+        type,
+        name: "",
+      }))
+    );
+
+    await db.insert(meals).values(mealsToInsert);
 
     return NextResponse.json({
       id: user.id,

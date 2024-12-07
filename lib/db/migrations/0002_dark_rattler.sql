@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "meal_unique_constraint" ON "meals" USING btree ("meal_plan_id","day","type");

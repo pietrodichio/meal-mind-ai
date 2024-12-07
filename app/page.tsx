@@ -15,10 +15,6 @@ export default function Home() {
         requirements.
       </p>
 
-      <div className="w-full mb-12">
-        <MealPlanList />
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl w-full mb-12">
         <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-lg">
           <CalendarDays className="h-12 w-12 mb-4 text-primary" />
@@ -45,7 +41,7 @@ export default function Home() {
         </div>
       </div>
 
-      <Link href="/meal-plans">
+      <Link href="/register">
         <Button size="lg" className="text-lg">
           Get Started
         </Button>

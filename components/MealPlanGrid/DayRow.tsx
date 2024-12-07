@@ -26,7 +26,7 @@ export function DayRow({ day, meals, isEditing, onEdit, onSave }: DayRowProps) {
             Lunch
           </div>
           <MealCell
-            value={meals.lunch.name}
+            value={meals?.lunch?.name}
             isEditing={isEditing === `${day}-lunch`}
             onEdit={() => onEdit("lunch")}
             onSave={(value) => onSave("lunch", value)}
@@ -39,7 +39,7 @@ export function DayRow({ day, meals, isEditing, onEdit, onSave }: DayRowProps) {
             Dinner
           </div>
           <MealCell
-            value={meals.dinner.name}
+            value={meals?.dinner?.name}
             isEditing={isEditing === `${day}-dinner`}
             onEdit={() => onEdit("dinner")}
             onSave={(value) => onSave("dinner", value)}
