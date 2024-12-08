@@ -68,8 +68,8 @@ export async function sendMealPlanEmail(
             <div style="margin-bottom: 20px;">
               <h2 style="color: #334155; text-transform: capitalize; margin-bottom: 12px;">${day}</h2>
               <div style="margin-left: 16px;">
-                <p style="margin: 8px 0;"><strong>Lunch:</strong> ${meals.lunch}</p>
-                <p style="margin: 8px 0;"><strong>Dinner:</strong> ${meals.dinner}</p>
+                <p style="margin: 8px 0;"><strong>Lunch:</strong> ${meals?.lunch}</p>
+                <p style="margin: 8px 0;"><strong>Dinner:</strong> ${meals?.dinner}</p>
               </div>
             </div>
           `
