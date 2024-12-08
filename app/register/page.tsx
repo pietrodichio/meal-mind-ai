@@ -16,47 +16,48 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError("Registering is not available yet");
+    setIsLoading(false);
 
-    const formData = new FormData(e.currentTarget);
-    const data = {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      name: formData.get("name"),
-    };
+    //   const formData = new FormData(e.currentTarget);
+    //   const data = {
+    //     email: formData.get("email"),
+    //     password: formData.get("password"),
+    //     name: formData.get("name"),
+    //   };
 
-    try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+    //   try {
+    //     const res = await fetch("/api/register", {
+    //       method: "POST",
+    //       body: JSON.stringify(data),
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //       },
+    //     });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to register");
-      }
+    //     if (!res.ok) {
+    //       const error = await res.json();
+    //       throw new Error(error.error || "Failed to register");
+    //     }
 
-      // Automatically sign in after registration
-      const signInResult = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+    //     // Automatically sign in after registration
+    //     const signInResult = await signIn("credentials", {
+    //       email: data.email,
+    //       password: data.password,
+    //       redirect: false,
+    //     });
 
-      if (signInResult?.error) {
-        throw new Error("Failed to sign in");
-      }
+    //     if (signInResult?.error) {
+    //       throw new Error("Failed to sign in");
+    //     }
 
-      router.push("/");
-      router.refresh();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Something went wrong");
-    } finally {
-      setIsLoading(false);
-    }
+    //     router.push("/");
+    //     router.refresh();
+    //   } catch (error) {
+    //     setError(error instanceof Error ? error.message : "Something went wrong");
+    //   } finally {
+    //     setIsLoading(false);
+    //   }
   }
 
   return (

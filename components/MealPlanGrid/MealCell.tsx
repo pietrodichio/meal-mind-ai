@@ -10,12 +10,12 @@ interface MealCellProps {
 export function MealCell({ value, isEditing, onEdit, onSave }: MealCellProps) {
   const fontSize = useMemo(() => {
     const length = value?.length || 0;
-    if (length === 0) return "1rem";
-    if (length < 20) return "1rem";
-    if (length < 30) return "0.875rem";
-    if (length < 50) return "0.75rem";
-    if (length < 100) return "0.625rem";
-    return "0.5rem";
+    if (length === 0) return "1.25rem";
+    if (length < 20) return "1.25rem";
+    if (length < 30) return "1.125rem";
+    if (length < 50) return "1rem";
+    if (length < 100) return "0.875rem";
+    return "0.75rem";
   }, [value]);
 
   return (

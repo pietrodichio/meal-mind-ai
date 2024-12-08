@@ -4,6 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { mealPlans, meals, users } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { getMealPlansByAccountId } from "@/lib/db/queries";
+import { generateMealPlan, PastMeal } from "@/lib/meal-generator";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
+    // Fetch last 20 meals for reference
+    const pastMeals = await db
+      .select({
+        name: meals.name,
+        day: meals.day,
+        type: meals.type,
+        createdAt: mealPlans.createdAt,
+      })
+      .from(meals)
+      .innerJoin(mealPlans, eq(meals.mealPlanId, mealPlans.id))
+      .where(eq(mealPlans.accountId, user.accountId))
+      .orderBy(desc(mealPlans.createdAt))
+      .limit(20);
+
+    // Generate AI meal plan with past meals context
+    const weeklyPlan = await generateMealPlan(pastMeals as PastMeal[]);
+
+    // Validate the weekly plan
+    if (!weeklyPlan || typeof weeklyPlan !== "object") {
+      throw new Error("Invalid meal plan generated");
+    }
+
     // Create new meal plan
     const [mealPlan] = await db
       .insert(mealPlans)
@@ -116,19 +139,35 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    // Create empty meals for the plan
-    const mealsToInsert = DAYS.flatMap((day) =>
-      TYPES.map((type) => ({
-        mealPlanId: mealPlan.id,
-        day,
-        type,
-        name: "",
-      }))
+    // Create meals from the AI-generated plan with validation
+    const mealsToInsert = Object.entries(weeklyPlan).flatMap(
+      ([day, dayMeals]) => {
+        const lunchName = dayMeals?.lunch?.description || `Lunch for ${day}`;
+        const dinnerName = dayMeals?.dinner?.description || `Dinner for ${day}`;
+
+        return [
+          {
+            mealPlanId: mealPlan.id,
+            day: day as any,
+            type: "lunch" as const,
+            name: lunchName,
+          },
+          {
+            mealPlanId: mealPlan.id,
+            day: day as any,
+            type: "dinner" as const,
+            name: dinnerName,
+          },
+        ];
+      }
     );
 
-    await db.insert(meals).values(mealsToInsert);
+    const insertedMeals = await db
+      .insert(meals)
+      .values(mealsToInsert)
+      .returning();
 
-    return NextResponse.json(mealPlan);
+    return NextResponse.json({ ...mealPlan, meals: insertedMeals });
   } catch (error) {
     console.error("Error creating meal plan:", error);
     return NextResponse.json(

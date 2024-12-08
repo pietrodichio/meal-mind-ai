@@ -5,6 +5,8 @@ import {
   timestamp,
   text,
   uniqueIndex,
+  boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // Accounts table (for families)
@@ -73,6 +75,17 @@ export const mealPlans = pgTable("meal_plans", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const groceryLists = pgTable("grocery_lists", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  mealPlanId: uuid("meal_plan_id")
+    .notNull()
+    .references(() => mealPlans.id, { onDelete: "cascade" }),
+  categories: jsonb("categories").notNull(),
+  isEdited: boolean("is_edited").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const accountsRelations = relations(accounts, ({ many }) => ({
   users: many(users),
@@ -93,6 +106,13 @@ export const mealPlansRelations = relations(mealPlans, ({ many }) => ({
 export const mealsRelations = relations(meals, ({ one }) => ({
   mealPlan: one(mealPlans, {
     fields: [meals.mealPlanId],
+    references: [mealPlans.id],
+  }),
+}));
+
+export const groceryListsRelations = relations(groceryLists, ({ one }) => ({
+  mealPlan: one(mealPlans, {
+    fields: [groceryLists.mealPlanId],
     references: [mealPlans.id],
   }),
 }));
