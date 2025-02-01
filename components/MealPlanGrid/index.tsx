@@ -71,8 +71,21 @@ export function MealPlanGrid({
   ) => {
     if (!mealPlan?.id) return;
 
+    // Create optimistically updated meal plan
+    const updatedMealPlan = {
+      ...mealPlan,
+      meals:
+        mealPlan.meals?.map((m) =>
+          m.day === day && m.type === meal ? { ...m, name: value } : m
+        ) || [],
+    };
+
+    // Optimistically update the UI
+    onUpdate?.(updatedMealPlan);
+    setIsEditing(null);
+
     try {
-      const updatedMealPlan = await mealPlanApi.update(mealPlan.id, {
+      const serverUpdatedMealPlan = await mealPlanApi.update(mealPlan.id, {
         plan: {
           [day]: {
             [meal]: { name: value },
@@ -80,9 +93,11 @@ export function MealPlanGrid({
         },
       });
 
-      onUpdate?.(updatedMealPlan);
-      setIsEditing(null);
+      // Update with server response to ensure consistency
+      onUpdate?.(serverUpdatedMealPlan);
     } catch (error) {
+      // Revert to original state on error
+      onUpdate?.(mealPlan);
       toast({
         title: "Error",
         description: "Failed to save changes. Please try again.",

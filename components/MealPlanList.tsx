@@ -26,13 +26,6 @@ export function MealPlanList() {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Scroll to last plan when data changes
-  useEffect(() => {
-    if (data?.pages) {
-      lastPlanRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [data?.pages]);
-
   if (status === "pending") return <div>Loading...</div>;
   if (status === "error") return <div>Error loading meal plans</div>;
 
@@ -57,8 +50,10 @@ export function MealPlanList() {
                   queryClient.setQueryData(["mealPlans"], (oldData: any) => ({
                     pages: oldData.pages.map((page: any) => ({
                       ...page,
-                      items: page.items.map((item: any) =>
-                        item.id === updatedPlan.id ? updatedPlan : item
+                      items: page.items.map((item: MealPlan) =>
+                        item.id === updatedPlan.id
+                          ? { ...item, ...updatedPlan }
+                          : item
                       ),
                     })),
                     pageParams: oldData.pageParams,
