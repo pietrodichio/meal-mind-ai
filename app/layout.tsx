@@ -11,6 +11,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "MealMind AI - Smart Meal Planning",
   description: "AI-powered meal planning and recipe generation",
+  icons: {
+    icon: [{ url: "/icon", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
