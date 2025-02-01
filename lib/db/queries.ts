@@ -35,6 +35,6 @@ export const getMealPlansByAccountId = (
     .leftJoin(meals, eq(meals.mealPlanId, mealPlans.id))
     .where(eq(mealPlans.accountId, accountId))
     .groupBy(mealPlans.id)
-    .orderBy(asc(mealPlans.createdAt))
+    .orderBy(desc(mealPlans.createdAt))
     .limit(limit)
     .offset(offset);
