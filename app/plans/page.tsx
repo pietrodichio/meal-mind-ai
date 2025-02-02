@@ -8,12 +8,10 @@ export default function Plans() {
       <p className="text-xl text-muted-foreground text-center mb-12 max-w-2xl">
         View and manage your meal plans here.
       </p>
-
-      <div className="w-full mb-12">
+      <CreateNewPlanButton />
+      <div className="w-full my-12 ">
         <MealPlanList />
       </div>
-
-      <CreateNewPlanButton />
     </div>
   );
 }

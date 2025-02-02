@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "MealMind AI - Smart Meal Planning",
   description: "AI-powered meal planning and recipe generation",
   icons: {
-    icon: [{ url: "/icon", type: "image/png" }],
+    icon: "/icon.svg",
   },
 };
 
