@@ -251,7 +251,7 @@ export function MealPlanGrid({
               <ShoppingBasket className="h-4 w-4" />
             </Button>
           </SheetTrigger>
-          <SheetContent>
+          <SheetContent className="overflow-y-scroll">
             <SheetHeader>
               <SheetTitle>Grocery List</SheetTitle>
               <SheetDescription>
