@@ -108,29 +108,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    // Fetch last 20 meals for reference
-    const pastMeals = await db
-      .select({
-        name: meals.name,
-        day: meals.day,
-        type: meals.type,
-        createdAt: mealPlans.createdAt,
-      })
-      .from(meals)
-      .innerJoin(mealPlans, eq(meals.mealPlanId, mealPlans.id))
-      .where(eq(mealPlans.accountId, user.accountId))
-      .orderBy(desc(mealPlans.createdAt))
-      .limit(20);
-
-    // Generate AI meal plan with past meals context
-    const weeklyPlan = await generateMealPlan(pastMeals as PastMeal[]);
-
-    // Validate the weekly plan
-    if (!weeklyPlan || typeof weeklyPlan !== "object") {
-      throw new Error("Invalid meal plan generated");
-    }
-
-    // Create new meal plan
+    // Create new meal plan first
     const [mealPlan] = await db
       .insert(mealPlans)
       .values({
@@ -139,28 +117,49 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    // Create meals from the AI-generated plan with validation
-    const mealsToInsert = Object.entries(weeklyPlan).flatMap(
-      ([day, dayMeals]) => {
-        const lunchName = dayMeals?.lunch?.description || `Lunch for ${day}`;
-        const dinnerName = dayMeals?.dinner?.description || `Dinner for ${day}`;
+    let weeklyPlan: Record<string, any> = {};
 
-        return [
-          {
-            mealPlanId: mealPlan.id,
-            day: day as any,
-            type: "lunch" as const,
-            name: lunchName,
-          },
-          {
-            mealPlanId: mealPlan.id,
-            day: day as any,
-            type: "dinner" as const,
-            name: dinnerName,
-          },
-        ];
+    try {
+      // Fetch last 20 meals for reference
+      const pastMeals = await db
+        .select({
+          name: meals.name,
+          day: meals.day,
+          type: meals.type,
+          createdAt: mealPlans.createdAt,
+        })
+        .from(meals)
+        .innerJoin(mealPlans, eq(meals.mealPlanId, mealPlans.id))
+        .where(eq(mealPlans.accountId, user.accountId))
+        .orderBy(desc(mealPlans.createdAt))
+        .limit(20);
+
+      // Attempt AI meal plan generation
+      const generatedPlan = await generateMealPlan(pastMeals as PastMeal[]);
+
+      if (generatedPlan && typeof generatedPlan === "object") {
+        weeklyPlan = generatedPlan;
       }
-    );
+    } catch (error) {
+      console.error("Failed to generate AI meal plan:", error);
+      // Continue with empty plan
+    }
+
+    // Create meals with fallback to empty values if AI generation failed
+    const mealsToInsert = DAYS.flatMap((day) => [
+      {
+        mealPlanId: mealPlan.id,
+        day,
+        type: "lunch" as const,
+        name: weeklyPlan[day]?.lunch?.description || "",
+      },
+      {
+        mealPlanId: mealPlan.id,
+        day,
+        type: "dinner" as const,
+        name: weeklyPlan[day]?.dinner?.description || "",
+      },
+    ]);
 
     const insertedMeals = await db
       .insert(meals)
