@@ -108,6 +108,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
+    // Fetch last 20 meals for reference
+    const pastMeals = await db
+      .select({
+        name: meals.name,
+        day: meals.day,
+        type: meals.type,
+        createdAt: mealPlans.createdAt,
+      })
+      .from(meals)
+      .innerJoin(mealPlans, eq(meals.mealPlanId, mealPlans.id))
+      .where(eq(mealPlans.accountId, user.accountId))
+      .orderBy(desc(mealPlans.createdAt))
+      .limit(20);
+
     // Create new meal plan first
     const [mealPlan] = await db
       .insert(mealPlans)
@@ -120,22 +134,11 @@ export async function POST(req: NextRequest) {
     let weeklyPlan: Record<string, any> = {};
 
     try {
-      // Fetch last 20 meals for reference
-      const pastMeals = await db
-        .select({
-          name: meals.name,
-          day: meals.day,
-          type: meals.type,
-          createdAt: mealPlans.createdAt,
-        })
-        .from(meals)
-        .innerJoin(mealPlans, eq(meals.mealPlanId, mealPlans.id))
-        .where(eq(mealPlans.accountId, user.accountId))
-        .orderBy(desc(mealPlans.createdAt))
-        .limit(20);
-
-      // Attempt AI meal plan generation
-      const generatedPlan = await generateMealPlan(pastMeals as PastMeal[]);
+      // Attempt AI meal plan generation with user's language preference
+      const generatedPlan = await generateMealPlan(
+        pastMeals as PastMeal[],
+        user.language || "en"
+      );
 
       if (generatedPlan && typeof generatedPlan === "object") {
         weeklyPlan = generatedPlan;
