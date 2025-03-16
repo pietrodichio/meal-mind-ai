@@ -15,16 +15,21 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // First, try to get existing grocery list
-    const existingList = await db.query.groceryLists.findFirst({
-      where: eq(groceryLists.mealPlanId, params.id),
-    });
+    const searchParams = req.nextUrl.searchParams;
+    const shouldRegenerate = searchParams.get("regenerate") === "true";
 
-    if (existingList) {
-      return NextResponse.json(existingList);
+    // Only check for existing list if we're not regenerating
+    if (!shouldRegenerate) {
+      const existingList = await db.query.groceryLists.findFirst({
+        where: eq(groceryLists.mealPlanId, params.id),
+      });
+
+      if (existingList) {
+        return NextResponse.json(existingList);
+      }
     }
 
-    // If no list exists, generate a new one
+    // Get meals and generate new list
     const mealsList = await db.query.meals.findMany({
       where: eq(meals.mealPlanId, params.id),
     });
@@ -35,7 +40,22 @@ export async function GET(
 
     const groceryList = await generateGroceryList(filteredMealsList);
 
-    // Save the generated list
+    // If regenerating, update existing list, otherwise create new one
+    if (shouldRegenerate) {
+      const [updatedList] = await db
+        .update(groceryLists)
+        .set({
+          categories: groceryList.categories,
+          isEdited: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(groceryLists.mealPlanId, params.id))
+        .returning();
+
+      return NextResponse.json(updatedList);
+    }
+
+    // Create new list
     const [savedList] = await db
       .insert(groceryLists)
       .values({

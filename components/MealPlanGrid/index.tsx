@@ -140,7 +140,7 @@ export function MealPlanGrid({
     setIsLoadingGroceryList(true);
 
     try {
-      const data = await mealPlanApi.getGroceryList(mealPlan.id);
+      const data = await mealPlanApi.getGroceryList(mealPlan.id, true);
       setGroceryList(data);
     } catch (error) {
       toast({
@@ -347,10 +347,18 @@ export function MealPlanGrid({
                         <Button
                           onClick={() => {
                             setIsEditingGroceryList(true);
-                            setEditedCategories({ ...groceryList.categories });
+                            setEditedCategories({ ...groceryList?.categories });
                           }}
                         >
                           Edit List
+                        </Button>
+                        <Button
+                          onClick={handleGenerateGroceryList}
+                          disabled={isLoadingGroceryList}
+                        >
+                          {isLoadingGroceryList
+                            ? "Regenerating..."
+                            : "Regenerate List"}
                         </Button>
                         <Button onClick={handleCopyGroceryList}>
                           <Share2 className="h-4 w-4 mr-2" />

@@ -42,9 +42,11 @@ export const mealPlanApi = {
   },
 
   // Grocery Lists
-  getGroceryList: async (mealPlanId: string) => {
+  getGroceryList: async (mealPlanId: string, regenerate?: boolean) => {
     const { data } = await api.get<GroceryList>(
-      `/meal-plans/${mealPlanId}/grocery-list`
+      `/meal-plans/${mealPlanId}/grocery-list${
+        regenerate ? "?regenerate=true" : ""
+      }`
     );
     return data;
   },
