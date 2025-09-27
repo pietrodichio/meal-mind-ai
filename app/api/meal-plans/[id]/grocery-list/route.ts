@@ -18,15 +18,14 @@ export async function GET(
     const searchParams = req.nextUrl.searchParams;
     const shouldRegenerate = searchParams.get("regenerate") === "true";
 
-    // Only check for existing list if we're not regenerating
-    if (!shouldRegenerate) {
-      const existingList = await db.query.groceryLists.findFirst({
-        where: eq(groceryLists.mealPlanId, params.id),
-      });
+    // Check if list exists
+    const existingList = await db.query.groceryLists.findFirst({
+      where: eq(groceryLists.mealPlanId, params.id),
+    });
 
-      if (existingList) {
-        return NextResponse.json(existingList);
-      }
+    // Return existing list if found and not regenerating
+    if (existingList && !shouldRegenerate) {
+      return NextResponse.json(existingList);
     }
 
     // Get meals and generate new list
@@ -40,8 +39,8 @@ export async function GET(
 
     const groceryList = await generateGroceryList(filteredMealsList);
 
-    // If regenerating, update existing list, otherwise create new one
-    if (shouldRegenerate) {
+    // If list exists and we're regenerating, update it
+    if (existingList && shouldRegenerate) {
       const [updatedList] = await db
         .update(groceryLists)
         .set({
@@ -55,7 +54,7 @@ export async function GET(
       return NextResponse.json(updatedList);
     }
 
-    // Create new list
+    // Create new list if it doesn't exist
     const [savedList] = await db
       .insert(groceryLists)
       .values({

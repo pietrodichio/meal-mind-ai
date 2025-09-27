@@ -135,12 +135,15 @@ export function MealPlanGrid({
     }
   };
 
-  const handleGenerateGroceryList = async () => {
+  const handleGenerateGroceryList = async (forceRegenerate?: boolean) => {
     if (!mealPlan?.id) return;
     setIsLoadingGroceryList(true);
 
     try {
-      const data = await mealPlanApi.getGroceryList(mealPlan.id, true);
+      const data = await mealPlanApi.getGroceryList(
+        mealPlan.id,
+        forceRegenerate
+      );
       setGroceryList(data);
     } catch (error) {
       toast({
@@ -245,7 +248,7 @@ export function MealPlanGrid({
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleGenerateGroceryList}
+              onClick={() => handleGenerateGroceryList()}
               disabled={isLoadingGroceryList}
             >
               <ShoppingBasket className="h-4 w-4" />
@@ -353,7 +356,7 @@ export function MealPlanGrid({
                           Edit List
                         </Button>
                         <Button
-                          onClick={handleGenerateGroceryList}
+                          onClick={() => handleGenerateGroceryList(true)}
                           disabled={isLoadingGroceryList}
                         >
                           {isLoadingGroceryList
