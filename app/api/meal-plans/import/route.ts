@@ -21,7 +21,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const parsed = importPayloadSchema.safeParse(await req.json());
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    const parsed = importPayloadSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid payload", details: parsed.error.flatten() },
@@ -77,7 +84,10 @@ export async function POST(req: NextRequest) {
           });
       }
 
-      // Upsert the grocery list (no unique constraint -> find then update/insert).
+      // Upsert the grocery list. There is no UNIQUE constraint on grocery_lists.meal_plan_id
+      // (kept out of v1 to avoid a schema migration), so this find-then-insert is NOT race-safe
+      // under concurrent imports for the same plan. Acceptable: a single user imports once a week,
+      // so concurrent writes to the same plan don't occur. Revisit with a unique index if that changes.
       const existingList = await tx.query.groceryLists.findFirst({
         where: eq(groceryLists.mealPlanId, planId),
       });
