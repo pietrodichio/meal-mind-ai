@@ -18,7 +18,7 @@ export const importPayloadSchema = z.object({
       z.object({
         day: z.enum(DAYS),
         type: z.enum(TYPES),
-        name: z.string(),
+        name: z.string().min(1),
       })
     )
     .length(14)

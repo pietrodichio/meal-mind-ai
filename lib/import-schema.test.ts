@@ -64,4 +64,17 @@ describe("importPayloadSchema", () => {
     });
     expect(r.success).toBe(false);
   });
+
+  it("rejects more than 14 meals", () => {
+    const meals = [...full14(), { day: "monday", type: "lunch", name: "extra" }];
+    const r = importPayloadSchema.safeParse({ meals, groceryList: validGrocery });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects an empty meal name", () => {
+    const meals = full14();
+    meals[0] = { day: "monday", type: "lunch", name: "" };
+    const r = importPayloadSchema.safeParse({ meals, groceryList: validGrocery });
+    expect(r.success).toBe(false);
+  });
 });
